@@ -1,0 +1,43 @@
+.sign-up-account-edit {
+    .list-text-setting {
+        padding: 20px;
+        .text-setting-item {
+            margin-top: 10px;
+            text-align: initial;
+            .text-sign_up {
+                font-size: x-large;
+                font-weight: 500;
+                text-align: center;
+                ;
+            }
+
+            .detailed-result {
+                margin-top: 1px;
+                border-radius: 5px;
+                padding: 5px;
+                position: absolute;
+                background: #fff;
+                z-index: 1000;
+                word-wrap: break-word;
+                font-weight: 500;
+                max-width: 500;
+
+                p.autocomplete-result-item {
+                    padding: 5px;
+                    word-wrap: break-word;
+                    font-weight: 500;
+                    max-width: 500;
+                    border-bottom: 1px solid #eee;
+                    cursor: pointer;
+                }
+
+                p.autocomplete-result-item:hover {
+                    flex-wrap: wrap;
+                    word-break: break-word;
+                    hyphens: auto;
+                    background-color: rgba(110, 173, 255, 0.418);
+                }
+            }
+        }
+    }
+}
