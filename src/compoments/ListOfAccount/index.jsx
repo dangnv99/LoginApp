@@ -25,7 +25,7 @@ import ModalDelete from './ModalDelete';
 import ModalEditAccount from './ModalEditAccount';
 import MUIDataTable from "mui-datatables";
 import { createTheme, MuiThemeProvider } from "@material-ui/core/styles";
-
+import { getWards, getDistricts, getProvinces } from 'sub-vn'
 import { useSelector, useDispatch } from "react-redux";
 import { userSettingsOperations } from "../../state/modules/userSettings";
 
@@ -38,8 +38,10 @@ const ListOfAccount = () => {
 
     const dispatch = useDispatch();
 
-    const [ListOfAccount, setListOfAccount] = useState(userSettings?.listUserSettings)
-
+    const [listOfAccount, setListOfAccount] = useState(userSettings?.listUserSettings)
+    const [listOfWards, setListOfWards] = useState(getWards())
+    const [listOfDistricts, setListOfDistricts] = useState(getDistricts())
+    const [listOfProvinces, setListOfProvinces] = useState(getProvinces())
     const validateInput = (value) => {
         return value.replace(/<[^>]+>/g, "").trim();
     };
@@ -134,9 +136,15 @@ const ListOfAccount = () => {
                 noHeaderWrap: true,
                 sort: false,
                 customBodyRender: (value, tableMeta, updateValue) => {
+                    const selected = tableMeta.tableData.find(
+                        (element) => element.id === value
+                    );
+                    let province = listOfProvinces.find((item) => item.code == selected.city_province).name
+                    let district = listOfDistricts.find((item) => item.code == selected.district).name
+                    let ward = listOfWards.find((item) => item.code == selected.wards).name
                     return (
                         <div>
-                            {value}
+                            {selected.detailed_address},{ward},{district},{province}
                         </div>
                     );
                 },
@@ -176,9 +184,7 @@ const ListOfAccount = () => {
                                             ))
                                         }))
                                     }}
-
                                 />
-
                             </div>
                         </div>
                     );
@@ -253,7 +259,7 @@ const ListOfAccount = () => {
                         }
                         columns={columns}
                         options={options}
-                        data={ListOfAccount}
+                        data={listOfAccount}
                     />
                 </MuiThemeProvider>
             </Card>

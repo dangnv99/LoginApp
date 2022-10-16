@@ -11,8 +11,8 @@ import {
     Icon,
     Select,
     FormLayout,
-    ButtonGroup,
-    Modal
+    Modal,
+    Toast
 } from '@shopify/polaris';
 import {
     EditMinor, CalendarMajor
@@ -25,25 +25,47 @@ import usePlacesService from "react-google-autocomplete/lib/usePlacesAutocomplet
 import './index.scss';
 import ShowPassWord from '../../../image/ShowPassWord';
 import HidePassword from '../../../image/HidePassword';
+import { useSelector, useDispatch } from "react-redux";
+import { userSettingsOperations } from "../../../state/modules/userSettings";
 const ModalEditAccount = (props) => {
 
-
-    const [active, setActive] = useState(false);
-
-    const handleChangeModal = useCallback(() => setActive(!active), [active]);
-    const handleSubmit = useCallback(() => {
-        handleChangeModal();
-        props.action();
-    });
-    const activatorMoal = (
-        <Button id="btn-outline" onClick={handleChangeModal} icon={EditMinor}></Button>
+    const { userSettings } = useSelector(
+        (state) => state
     );
+
+    const dispatch = useDispatch();
+
     const [isRevealPwd, setIsRevealPwd] = useState(false);
     const [isConfirmRevealPwd, setIsConfirmRevealPwd] = useState(false);
     const [listProvinces, setListProvinces] = useState();
     const [listDistricts, setListDistricts] = useState();
     const [listWards, setListWards] = useState();
     const [showResult, setShowResult] = useState(false);
+    const [active, setActive] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [errorConfirm, setErrorConfirm] = useState();
+
+    const handleChangeModal = () => {
+        setActive(!active);
+        setLoading(false);
+    };
+    
+    const handleSubmit = () => {
+        if(checkConfirmPassword()){
+            setLoading(true);
+            dispatch(userSettingsOperations.fetchUpdate(dataSubmit.id, dataSubmit, () => {
+                dispatch(userSettingsOperations.fetchList(dataSubmit, () => {
+                    dispatch(userSettingsOperations.fetchList())
+                    handleChangeModal();
+                    formik.resetForm();
+                }));
+            }))
+        }
+    }
+
+    const activatorMoal = (
+        <Button id="btn-outline" onClick={handleChangeModal} icon={EditMinor}></Button>
+    );
 
 
     const validationSchema = yup.object({
@@ -57,8 +79,6 @@ const ModalEditAccount = (props) => {
         wards: yup.string().required("Wards of birth is required"),
         detailed_address: yup.string().required("Detailed address of birth is required"),
     });
-
-
 
     const formik = useFormik({
         initialValues: {
@@ -75,10 +95,22 @@ const ModalEditAccount = (props) => {
         validationSchema: validationSchema,
         enableReinitialize: true,
         onSubmit: () => {
-            formik.resetForm()
+            handleSubmit()
         },
     });
 
+    let dataSubmit = {
+        id: props.selected.id,
+        user_name: formik.values.user_name,
+        email: formik.values.email,
+        password: formik.values.password,
+        // confirm_password: formik.values.confirm_password,
+        date_of_birth: formik.values.date_of_birth,
+        city_province: formik.values.city_province,
+        district: formik.values.district,
+        wards: formik.values.wards,
+        detailed_address: formik.values.detailed_address,
+    }
     const handleChange = (value, id, name) => {
         let event = {
             target: {
@@ -137,13 +169,12 @@ const ModalEditAccount = (props) => {
         }
     }, [props.selected]);
 
-
-
     useEffect(() => {
         let data = getProvinces();
         let newData = data.map((item) => ({ label: item.name, value: item.code }));
         setListProvinces(newData)
     }, []);
+
     const handleGetListDistrict = (provinces) => {
         if (provinces) {
             let dataDistrict = getDistrictsByProvinceCode(provinces);
@@ -186,12 +217,20 @@ const ModalEditAccount = (props) => {
     }, []);
 
     const validateInput = (value) => {
-        console.log(value);
         return value.replace(/<[^>]+>/g, "").trim();
     };
+    const checkConfirmPassword = () => {
+        let check = true;
+        if (formik.values.password != formik.values.confirm_password) {
+            setErrorConfirm('Comfirm Password Invalid')
+            check = false;
+        }
+        else {
+            setErrorConfirm()
+        }
+        return check;
+    }
     return (
-
-
         <Modal
             activator={activatorMoal}
             open={active}
@@ -244,10 +283,13 @@ const ModalEditAccount = (props) => {
                                 type={isConfirmRevealPwd ? "text" : "password"}
                                 placeholder="Your comfirm password"
                                 value={formik.values.confirm_password}
-                                onChange={(value, id) => { handleChange(value, id, 'confirm_password') }}
+                                onChange={(value, id) => {
+                                     handleChange(value, id, 'confirm_password')
+                                     setErrorConfirm()
+                                    }}
                                 onBlur={(val, id) => { handleChange(validateInput(val.target.value), id, 'confirm_password') }}
 
-                                error={handleError('confirm_password')}
+                                error={errorConfirm ? errorConfirm : handleError('confirm_password')}
                                 suffix={
                                     <Button
                                         plain
@@ -331,7 +373,9 @@ const ModalEditAccount = (props) => {
                                         onChange={(value, id) => {
                                             handleGetListDistrict(value)
                                             handleChange(value, id, 'city_province')
-
+                                            if(formik.values.district){
+                                                handleChange('', 'district', 'district')
+                                            }
                                         }}
                                         error={handleError('city_province')}
                                     />
@@ -345,7 +389,9 @@ const ModalEditAccount = (props) => {
                                         onChange={(value, id) => {
                                             handleGetListWards(value)
                                             handleChange(value, id, 'district')
-
+                                            if(formik.values.wards){
+                                                handleChange('', 'wards', 'wards')
+                                            }
                                         }}
 
                                         error={handleError('district')}
@@ -421,7 +467,7 @@ const ModalEditAccount = (props) => {
                                     Cancel
                                 </Button>
                             </div>
-                            <Button primary submit>
+                            <Button primary submit loading={loading}>
                                 Submit
                             </Button>
                         </div>
@@ -430,8 +476,6 @@ const ModalEditAccount = (props) => {
                 </div>
             </form>
         </Modal>
-
-
     )
 };
 export default ModalEditAccount;

@@ -38,8 +38,6 @@ const SignUpAccount = () => {
 
     const dispatch = useDispatch();
 
-
-
     const [isRevealPwd, setIsRevealPwd] = useState(false);
     const [isConfirmRevealPwd, setIsConfirmRevealPwd] = useState(false);
     const [listProvinces, setListProvinces] = useState();
@@ -47,7 +45,7 @@ const SignUpAccount = () => {
     const [listWards, setListWards] = useState();
     const [showResult, setShowResult] = useState(false);
     const [loading, setLoading] = useState(false);
-
+    const [errorConfirm, setErrorConfirm] = useState();
     const validationSchema = yup.object({
         email: yup.string().email('Email invalid').required("Email is required"),
         password: yup.string().required("Password is required"),
@@ -59,7 +57,6 @@ const SignUpAccount = () => {
         wards: yup.string().required("Wards of birth is required"),
         detailed_address: yup.string().required("Detailed address of birth is required"),
     });
-
 
     const formik = useFormik({
         initialValues: {
@@ -80,7 +77,6 @@ const SignUpAccount = () => {
         },
     });
 
-
     const handleChange = (value, id, name) => {
         let event = {
             target: {
@@ -96,12 +92,10 @@ const SignUpAccount = () => {
         return (formik.touched[key] && Boolean(formik.errors[key])) ? (formik.touched[key] && formik.errors[key]) : ""
     }
 
-
     let dataSubmit = {
         user_name: formik.values.user_name,
         email: formik.values.email,
         password: formik.values.password,
-        // confirm_password: formik.values.confirm_password,
         date_of_birth: formik.values.date_of_birth,
         city_province: formik.values.city_province,
         district: formik.values.district,
@@ -110,24 +104,17 @@ const SignUpAccount = () => {
     }
 
     const handleSubmit = () => {
-        setLoading(true);
-        dispatch(userSettingsOperations.fetchCreate(dataSubmit, () => {
-            dispatch(userSettingsOperations.fetchList(dataSubmit, () => {
-                dispatch(userSettingsOperations.fetchList())
-                toggleActive();
-                setLoading(false);
-                formik.resetForm();
-            }));
-        }))
+        if(checkConfirmPassword()){
+            setLoading(true);
+            dispatch(userSettingsOperations.fetchCreate(dataSubmit, () => {
+                dispatch(userSettingsOperations.fetchList(dataSubmit, () => {
+                    dispatch(userSettingsOperations.fetchList())
+                    setLoading(false);
+                    formik.resetForm();
+                }));
+            }))
+        }
     }
-    const [active, setActive] = useState(false);
-
-    const toggleActive = () => setActive((active) => !active);
-
-    const toastMarkup = active ? (
-        <Toast content="Successfull" onDismiss={toggleActive} />
-    ) : null;
-
 
     const date = new Date();
     const [{ month, year }, setDate] = useState({ month: date.getMonth(), year: date.getFullYear() });
@@ -140,7 +127,6 @@ const SignUpAccount = () => {
         (month, year) => setDate({ month, year }),
         [],
     );
-
 
     useEffect(() => {
         let data = getProvinces();
@@ -173,7 +159,6 @@ const SignUpAccount = () => {
             componentRestrictions: { country: 'vn' },
         }
     });
-
     const handleSelectAddress = useCallback((terms) => {
         let convertTerms = [];
         if (terms.length > 4) {
@@ -187,251 +172,260 @@ const SignUpAccount = () => {
         handleChange(convertAddress, 'detailed_address', 'detailed_address')
         setShowResult(false);
     }, []);
-
     const validateInput = (value) => {
         return value.replace(/<[^>]+>/g, "").trim();
     };
+
+    const checkConfirmPassword = () => {
+        let check = true;
+        if (formik.values.password != formik.values.confirm_password) {
+            setErrorConfirm('Comfirm Password Invalid')
+            check = false;
+        }
+        else {
+            setErrorConfirm()
+        }
+        return check;
+    }
     return (
-
         <form onSubmit={formik.handleSubmit}>
-            <Frame>
-                <div className="sign-up-account">
-                    <Layout>
-                        <Card>
-                            <div className="list-text-setting">
+            <div className="sign-up-account">
+                <Layout>
+                    <Card>
+                        <div className="list-text-setting">
 
-                                <div className="text-setting-item">
-                                    <p className="text-sign_up">Sign Up</p>
-                                </div>
+                            <div className="text-setting-item">
+                                <p className="text-sign_up">Sign Up</p>
+                            </div>
 
-                                <div className="text-setting-item">
-                                    <TextField
-                                        label="User name"
-                                        id="user_name"
-                                        name="user_name"
-                                        placeholder="Your name"
-                                        value={formik.values.user_name}
-                                        onChange={(value, id) => { handleChange(value, id, 'user_name') }}
-                                        onBlur={(val, id) => { handleChange(validateInput(val.target.value), id, 'user_name') }}
-                                        error={handleError('password')}
-                                    />
-                                </div>
+                            <div className="text-setting-item">
+                                <TextField
+                                    label="User name"
+                                    id="user_name"
+                                    name="user_name"
+                                    placeholder="Your name"
+                                    value={formik.values.user_name}
+                                    onChange={(value, id) => { handleChange(value, id, 'user_name') }}
+                                    onBlur={(val, id) => { handleChange(validateInput(val.target.value), id, 'user_name') }}
+                                    error={handleError('password')}
+                                />
+                            </div>
 
-                                <div className="text-setting-item">
-                                    <TextField
-                                        label="Password"
-                                        id="password"
-                                        name="password"
-                                        type={isRevealPwd ? "text" : "password"}
-                                        placeholder="Your password"
-                                        value={formik.values.password}
-                                        onChange={(value, id) => { handleChange(value, id, 'password') }}
-                                        onBlur={(val, id) => { handleChange(validateInput(val.target.value), id, 'password') }}
-                                        error={handleError('password')}
-                                        suffix={
-                                            <Button
-                                                plain
-                                                onClick={() => setIsRevealPwd(prevState => !prevState)}
-                                            >
-                                                {isRevealPwd ? <ShowPassWord /> : <HidePassword />}
-                                            </Button>
-                                        }
-                                    />
-                                </div>
-
-                                <div className="text-setting-item">
-                                    <TextField
-                                        label="Comfirm password"
-                                        id="confirm_password"
-                                        name="confirm_password"
-                                        type={isConfirmRevealPwd ? "text" : "password"}
-                                        placeholder="Your comfirm password"
-                                        value={formik.values.confirm_password}
-                                        onChange={(value, id) => { handleChange(value, id, 'confirm_password') }}
-                                        onBlur={(val, id) => { handleChange(validateInput(val.target.value), id, 'confirm_password') }}
-
-                                        error={handleError('confirm_password')}
-                                        suffix={
-                                            <Button
-                                                plain
-                                                onClick={() => setIsConfirmRevealPwd(prevState => !prevState)}
-                                            >
-                                                {isConfirmRevealPwd ? <ShowPassWord /> : <HidePassword />}
-                                            </Button>
-                                        }
-                                    />
-                                </div>
-
-                                <div className="text-setting-item">
-                                    <TextField
-                                        label="Email"
-                                        id="email"
-                                        name="email"
-                                        value={formik.values.email}
-                                        onChange={(value, id) => { handleChange(value, id, 'email') }}
-                                        onBlur={(val, id) => { handleChange(validateInput(val.target.value), id, 'email') }}
-                                        error={handleError('email')}
-                                    />
-                                </div>
-
-                                <div className="text-setting-item">
-                                    <Popover
-                                        active={popoverActive}
-                                        fullWidth
-                                        sectioned
-                                        activator={
-                                            <TextField
-                                                type="text"
-                                                label='Date of Birth'
-                                                id='date_of_birth'
-                                                name='date_of_birth'
-                                                error={handleError('date_of_birth')}
-                                                prefix={
-                                                    <div onClick={togglePopoverActive} style={{ cursor: 'pointer' }}>
-                                                        <Icon
-                                                            source={CalendarMajor}
-                                                            color="base"
-                                                        />
-                                                    </div>
-                                                }
-                                                value={formik.values.date_of_birth}
-                                                y
-                                                onFocus={togglePopoverActive}
-                                            />
-                                        }>
-                                        <DatePicker
-                                            month={month}
-                                            year={year}
-                                            onChange={
-                                                (value) => {
-                                                    let dateSelect = new Date();
-                                                    dateSelect.setDate(value.start.getDate());
-                                                    dateSelect.setMonth(value.start.getMonth());
-                                                    dateSelect.setFullYear(value.start.getFullYear());
-                                                    let dateSelected = moment(dateSelect).format("DD/MM/YYYY");
-                                                    setSelectedDates(dateSelect);
-                                                    handleChange(dateSelected, 'date_of_birth', 'date_of_birth')
-                                                    togglePopoverActive();
-                                                }
-                                            }
-                                            onMonthChange={handleMonthChange}
-                                            selected={selectedDates}
-                                        />
-                                    </Popover>
-                                </div>
-
-                                <div className="text-setting-item">
-                                    <FormLayout>
-                                        <FormLayout.Group condensed>
-                                            <Select
-                                                label="City/Province"
-                                                id="city_province"
-                                                name="city_province"
-                                                options={listProvinces}
-                                                value={formik.values.city_province}
-                                                placeholder="Your city/province"
-                                                onChange={(value, id) => {
-                                                    handleGetListDistrict(value)
-                                                    handleChange(value, id, 'city_province')
-                                                }}
-                                                error={handleError('city_province')}
-                                            />
-                                            <Select
-                                                label="District"
-                                                id="district"
-                                                name="district"
-                                                options={listDistricts}
-                                                placeholder="Your district"
-                                                value={formik.values.district}
-                                                onChange={(value, id) => {
-                                                    handleGetListWards(value)
-                                                    handleChange(value, id, 'district')
-                                                }}
-                                                error={handleError('district')}
-                                            />
-                                            <Select
-                                                label="Wards"
-                                                id="wards"
-                                                name="wards"
-                                                options={listWards}
-                                                placeholder="Your wards"
-                                                value={formik.values.wards}
-                                                onChange={(value, id) => {
-                                                    handleChange(value, id, 'wards')
-                                                }}
-                                                error={handleError('wards')}
-                                            />
-                                        </FormLayout.Group>
-                                    </FormLayout>
-                                </div>
-
-                                <div className="text-setting-item">
-                                    <TextField
-                                        label="Detailed address"
-                                        id="detailed_address"
-                                        name="detailed_address"
-                                        error={handleError('detailed_address')}
-                                        onChange={(value, id) => {
-                                            handleChange(value, id, 'detailed_address')
-                                            getPlacePredictions({
-                                                input: value,
-                                            });
-                                            setShowResult(true);
-
-                                        }}
-                                        onBlur={(val, id) => { handleChange(validateInput(val.target.value), id, 'detailed_address') }}
-                                        onMouseLeave={() => setShowResult(false)}
-                                        value={formik.values.detailed_address}
-                                    />
-                                    {showResult &&
-                                        (
-                                            <div className="text-setting-item"
-                                                onMouseLeave={() => setShowResult(false)}
-                                            >
-                                                <div className="detailed-result">
-                                                    {placePredictions.length > 0 &&
-                                                        placePredictions.map((item) => (
-                                                            <p
-                                                                key={item.place_id}
-                                                                className="autocomplete-result-item"
-                                                                onClick={() => {
-                                                                    handleSelectAddress(
-                                                                        item.terms
-                                                                    )
-                                                                }}
-                                                            >
-                                                                {item.description}
-                                                            </p>
-                                                        ))}
-                                                </div>
-                                            </div>
-                                        )
-                                    }
-                                </div>
-
-                                <div className="text-setting-item" style={{ display: 'flex', justifyContent: 'center' }} >
-                                    <div style={{ color: '#bf0711', marginRight: '10px' }}>
-                                        <Button monochrome outline
-                                            onClick={() => { formik.resetForm(); }}
+                            <div className="text-setting-item">
+                                <TextField
+                                    label="Password"
+                                    id="password"
+                                    name="password"
+                                    type={isRevealPwd ? "text" : "password"}
+                                    placeholder="Your password"
+                                    value={formik.values.password}
+                                    onChange={(value, id) => { handleChange(value, id, 'password') }}
+                                    onBlur={(val, id) => { handleChange(validateInput(val.target.value), id, 'password') }}
+                                    error={handleError('password')}
+                                    suffix={
+                                        <Button
+                                            plain
+                                            onClick={() => setIsRevealPwd(prevState => !prevState)}
                                         >
-                                            Cancel
+                                            {isRevealPwd ? <ShowPassWord /> : <HidePassword />}
                                         </Button>
-                                    </div>
-                                    <Button
-                                        primary
-                                        submit
-                                        loading={loading}
+                                    }
+                                />
+                            </div>
+
+                            <div className="text-setting-item">
+                                <TextField
+                                    label="Comfirm password"
+                                    id="confirm_password"
+                                    name="confirm_password"
+                                    type={isConfirmRevealPwd ? "text" : "password"}
+                                    placeholder="Your comfirm password"
+                                    value={formik.values.confirm_password}
+                                    onChange={(value, id) => { 
+                                        handleChange(value, id, 'confirm_password') 
+                                        setErrorConfirm()
+                                    }}
+                                    onBlur={(val, id) => { handleChange(validateInput(val.target.value), id, 'confirm_password') }}
+                                    error={errorConfirm ? errorConfirm : handleError('confirm_password')}
+                                    suffix={
+                                        <Button
+                                            plain
+                                            onClick={() => setIsConfirmRevealPwd(prevState => !prevState)}
+                                        >
+                                            {isConfirmRevealPwd ? <ShowPassWord /> : <HidePassword />}
+                                        </Button>
+                                    }
+                                />
+                            </div>
+
+                            <div className="text-setting-item">
+                                <TextField
+                                    label="Email"
+                                    id="email"
+                                    name="email"
+                                    value={formik.values.email}
+                                    onChange={(value, id) => { handleChange(value, id, 'email') }}
+                                    onBlur={(val, id) => { handleChange(validateInput(val.target.value), id, 'email') }}
+                                    error={handleError('email')}
+                                />
+                            </div>
+
+                            <div className="text-setting-item">
+                                <Popover
+                                    active={popoverActive}
+                                    fullWidth
+                                    sectioned
+                                    activator={
+                                        <TextField
+                                            type="text"
+                                            label='Date of Birth'
+                                            id='date_of_birth'
+                                            name='date_of_birth'
+                                            error={handleError('date_of_birth')}
+                                            prefix={
+                                                <div onClick={togglePopoverActive} style={{ cursor: 'pointer' }}>
+                                                    <Icon
+                                                        source={CalendarMajor}
+                                                        color="base"
+                                                    />
+                                                </div>
+                                            }
+                                            value={formik.values.date_of_birth}
+                                            y
+                                            onFocus={togglePopoverActive}
+                                        />
+                                    }>
+                                    <DatePicker
+                                        month={month}
+                                        year={year}
+                                        onChange={
+                                            (value) => {
+                                                let dateSelect = new Date();
+                                                dateSelect.setDate(value.start.getDate());
+                                                dateSelect.setMonth(value.start.getMonth());
+                                                dateSelect.setFullYear(value.start.getFullYear());
+                                                let dateSelected = moment(dateSelect).format("DD/MM/YYYY");
+                                                setSelectedDates(dateSelect);
+                                                handleChange(dateSelected, 'date_of_birth', 'date_of_birth')
+                                                togglePopoverActive();
+                                            }
+                                        }
+                                        onMonthChange={handleMonthChange}
+                                        selected={selectedDates}
+                                    />
+                                </Popover>
+                            </div>
+
+                            <div className="text-setting-item">
+                                <FormLayout>
+                                    <FormLayout.Group condensed>
+                                        <Select
+                                            label="City/Province"
+                                            id="city_province"
+                                            name="city_province"
+                                            options={listProvinces}
+                                            value={formik.values.city_province}
+                                            placeholder="Your city/province"
+                                            onChange={(value, id) => {
+                                                handleGetListDistrict(value)
+                                                handleChange(value, id, 'city_province')
+                                            }}
+                                            error={handleError('city_province')}
+                                        />
+                                        <Select
+                                            label="District"
+                                            id="district"
+                                            name="district"
+                                            options={listDistricts}
+                                            placeholder="Your district"
+                                            value={formik.values.district}
+                                            onChange={(value, id) => {
+                                                handleGetListWards(value)
+                                                handleChange(value, id, 'district')
+                                            }}
+                                            error={handleError('district')}
+                                        />
+                                        <Select
+                                            label="Wards"
+                                            id="wards"
+                                            name="wards"
+                                            options={listWards}
+                                            placeholder="Your wards"
+                                            value={formik.values.wards}
+                                            onChange={(value, id) => {
+                                                handleChange(value, id, 'wards')
+                                            }}
+                                            error={handleError('wards')}
+                                        />
+                                    </FormLayout.Group>
+                                </FormLayout>
+                            </div>
+
+                            <div className="text-setting-item">
+                                <TextField
+                                    label="Detailed address"
+                                    id="detailed_address"
+                                    name="detailed_address"
+                                    error={handleError('detailed_address')}
+                                    onChange={(value, id) => {
+                                        handleChange(value, id, 'detailed_address')
+                                        getPlacePredictions({
+                                            input: value,
+                                        });
+                                        setShowResult(true);
+
+                                    }}
+                                    onBlur={(val, id) => { handleChange(validateInput(val.target.value), id, 'detailed_address') }}
+                                    onMouseLeave={() => setShowResult(false)}
+                                    value={formik.values.detailed_address}
+                                />
+                                {showResult &&
+                                    (
+                                        <div className="text-setting-item"
+                                            onMouseLeave={() => setShowResult(false)}
+                                        >
+                                            <div className="detailed-result">
+                                                {placePredictions.length > 0 &&
+                                                    placePredictions.map((item) => (
+                                                        <p
+                                                            key={item.place_id}
+                                                            className="autocomplete-result-item"
+                                                            onClick={() => {
+                                                                handleSelectAddress(
+                                                                    item.terms
+                                                                )
+                                                            }}
+                                                        >
+                                                            {item.description}
+                                                        </p>
+                                                    ))}
+                                            </div>
+                                        </div>
+                                    )
+                                }
+                            </div>
+
+                            <div className="text-setting-item" style={{ display: 'flex', justifyContent: 'center' }} >
+                                <div style={{ color: '#bf0711', marginRight: '10px' }}>
+                                    <Button monochrome outline
+                                        onClick={() => { formik.resetForm(); }}
                                     >
-                                        Submit
+                                        Cancel
                                     </Button>
                                 </div>
-
+                                <Button
+                                    primary
+                                    submit
+                                    loading={loading}
+                                >
+                                    Submit
+                                </Button>
                             </div>
-                        </Card>
-                    </Layout>
-                </div>
-                {toastMarkup}
-            </Frame>
+
+                        </div>
+                    </Card>
+                </Layout>
+            </div>
         </form>
     )
 };

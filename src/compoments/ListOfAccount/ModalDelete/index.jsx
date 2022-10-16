@@ -1,37 +1,27 @@
 import React, { useCallback, useState } from "react";
 import { Button, TextContainer, Modal, Frame, Toast } from "@shopify/polaris";
 import { DeleteMinor } from "@shopify/polaris-icons";
+import './index.scss';
 
 const ModalDelete = ({ title, action }) => {
   const [active, setActive] = useState(false);
   const [loading, setLoading] = useState(false);
-  const handleChange = useCallback(() => setActive(!active), [active]);
+  const handleChange = () => {
+    setActive(!active)
+    setLoading(false)
+  };
   const handleSubmit = useCallback(() => {
     setLoading(true)
     action(() => {
-      setLoading(false)
       handleChange();
-      toggleActive();
     });
   });
-
-
-  const [activeToast, setActiveToast] = useState(false);
-
-  const toggleActive = () => setActiveToast((activeToast) => !activeToast);
-
-  const toastMarkup = activeToast ? (
-    <Toast content="Successfull" onDismiss={toggleActive} />
-  ) : null;
-
 
   const activator = (
     <Button id="btn-outline" onClick={handleChange} icon={DeleteMinor}></Button>
   );
   return (
-
-    <div style={{ marginLeft: '10px' }}>
-      <Frame>
+    <div className="modal-delete" style={{ marginLeft: '10px' }}>   
         <Modal
           activator={activator}
           open={active}
@@ -52,13 +42,8 @@ const ModalDelete = ({ title, action }) => {
           ]}
         >
         </Modal>
-        {toastMarkup}
-      </Frame>
     </div>
   );
 };
-const mapStateToProps = (state) => ({
-  reviews: state.reviews,
-});
 
 export default ModalDelete;

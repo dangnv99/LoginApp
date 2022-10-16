@@ -1,6 +1,6 @@
 import * as actions from './actions'
 import UserSettings from '../../../apiAxios/userSettings'
-
+import { notifyOperations } from '../notify'
 
 
 let userSettings = new UserSettings()
@@ -39,9 +39,10 @@ export const fetchCreate = (data, success = () => { }, error = () => { }) => {
         if (status) {
             dispatch(actions.fetchCreateSuccess(response))
             success(response)
+            dispatch(notifyOperations.show("Successfully!"));
         } else {
             dispatch(actions.fetchCreateFailure(response))
-            
+            dispatch(notifyOperations.show('Request failed', true))
             error(response)
         }
     }
@@ -49,12 +50,14 @@ export const fetchCreate = (data, success = () => { }, error = () => { }) => {
 
 export const fetchUpdate = (id, data, success = () => { }, error = () => { }) => {
     return async (dispatch) => {
-        dispatch(actions.fetchUpdateRequest())
+       
         let { status, response } = await userSettings.update(id, data)
         if (status) {
             dispatch(actions.fetchUpdateSuccess(response))
             success(response)
+            dispatch(notifyOperations.show("Successfully!"));
         } else {
+            dispatch(notifyOperations.show('Request failed', true))
             dispatch(actions.fetchUpdateFailure(response))
             error(response)
         }
@@ -68,7 +71,9 @@ export const fetchDelete = (id, success = () => { }) => {
         if (status) {
             dispatch(actions.fetchDeleteSuccess(response))
             success(response)
+            dispatch(notifyOperations.show("Successfully!"));
         } else {
+            dispatch(notifyOperations.show('Request failed', true))
             dispatch(actions.fetchDeleteFailure(response))
         }
     }
